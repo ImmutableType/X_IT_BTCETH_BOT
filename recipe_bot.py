@@ -1,6 +1,7 @@
 import requests
 import csv
 from datetime import datetime
+import os
 
 def get_recipes(number=7):  # Week's worth
    recipes = []
@@ -10,9 +11,15 @@ def get_recipes(number=7):  # Week's worth
    return recipes
 
 def save_to_csv(recipes):
-   with open('recipes.csv', 'w', newline='') as file:
+   # Create header if file doesn't exist
+   if not os.path.exists('recipes.csv'):
+       with open('recipes.csv', 'w', newline='') as file:
+           writer = csv.writer(file)
+           writer.writerow(['Date', 'Title', 'Instructions', 'Image'])
+
+   # Append new recipes
+   with open('recipes.csv', 'a', newline='') as file:
        writer = csv.writer(file)
-       writer.writerow(['Date', 'Title', 'Instructions', 'Image'])
        for recipe in recipes:
            writer.writerow([
                datetime.now().strftime('%Y-%m-%d'),
