@@ -1,29 +1,31 @@
 name: Update Recipe Database
 on:
- schedule:
-   - cron: '0 0 * * *'
- workflow_dispatch:
+  schedule:
+    - cron: '0 0 * * *'
+  workflow_dispatch:
 
 jobs:
- update-recipes:
-   runs-on: ubuntu-latest
-   steps:
-     - uses: actions/checkout@v2
-     - uses: actions/setup-python@v2
-       with:
-         python-version: '3.11'
-     - name: Install dependencies
-       run: pip install -r requirements.txt
-     - name: Update recipes
-       run: python recipe_bot.py
-     - name: Commit changes
-       run: |
-         git config --local user.email "github-actions[bot]@users.noreply.github.com"
-         git config --local user.name "github-actions[bot]"
-         git add recipes.csv
-         git commit -m "Update recipes database" || exit 0
-     - name: Push changes
-       uses: ad-m/github-push-action@master
-       with:
-         persist-credentials: false
-         github_token: ${{ secrets.GH_PAT }}
+  update-recipes:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-python@v2
+        with:
+          python-version: '3.11'
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+      - name: Update recipes
+        run: python recipe_bot.py
+      - name: Commit changes
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add recipes.csv
+          git commit -m "Update recipes database" || exit 0
+      - name: Push changes
+        uses: ad-m/github-push-action@master
+        with:
+          branch: main
+          force: true
+          directory: .
+          github_token: ${{ secrets.GITHUB_TOKEN }}
