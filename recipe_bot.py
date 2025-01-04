@@ -13,7 +13,8 @@ def get_recipes(number=1):
     return recipes
 
 def post_to_ifttt(recipe):
-    tweet_text = (f"🍳 Today's Recipe: {recipe['strMeal']}\n\n"
+    # Shortened version for tweet
+tweet_text = (f"🍳 Today's Recipe: {recipe['strMeal']}\n\n"
                  f"Instructions: {recipe['strInstructions'][:200]}...")
     
     payload = {
@@ -25,18 +26,18 @@ def post_to_ifttt(recipe):
     return response.status_code == 200
 
 def save_to_csv(recipe, posted=False):
-    # Create header if file doesn't exist
-    if not os.path.exists('recipes.csv'):
-        with open('recipes.csv', 'a', newline='') as file:
-            writer = csv.writer(file)
-            writer.writerow(['Date', 'Title', 'Instructions', 'Image URL', 'Posted'])
+    file_exists = os.path.exists('recipes.csv')
     
-    with open('recipes.csv', 'a', newline='') as file:
+    with open('recipes.csv', 'a', newline='', encoding='utf-8') as file:
         writer = csv.writer(file)
+        if not file_exists:
+            writer.writerow(['Date', 'Title', 'Full Instructions', 'Image URL', 'Posted'])
+        
+        # Store complete recipe in CSV
         writer.writerow([
             datetime.now().strftime('%Y-%m-%d'),
             recipe['strMeal'],
-            recipe['strInstructions'],
+            recipe['strInstructions'],  # Full instructions
             recipe['strMealThumb'],
             'Yes' if posted else 'No'
         ])
