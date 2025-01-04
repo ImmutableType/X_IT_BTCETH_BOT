@@ -13,15 +13,30 @@ def get_recipes(number=1):
     return recipes
 
 def post_to_ifttt(recipe):
-    tweet_text = (f"🍳 Today's Recipe: {recipe['strMeal']}\n\n"
-                 f"Instructions:\n{recipe['strInstructions']}")
+    # Split recipe into chunks of ~200 characters each
+    instructions = recipe['strInstructions']
+    chunks = [instructions[i:i+200] for i in range(0, len(instructions), 200)]
+    
+    # First tweet with title
+    initial_tweet = f"🍳 Today's Recipe: {recipe['strMeal']}\n\nInstructions (1/{len(chunks)+1}):\n{chunks[0]}..."
     
     payload = {
         "value1": datetime.now().strftime('%Y-%m-%d'),
-        "value2": tweet_text,
+        "value2": initial_tweet,
         "value3": recipe['strMealThumb']
     }
     response = requests.post(WEBHOOK_URL, json=payload)
+    
+    # Thread continuation
+    for i, chunk in enumerate(chunks[1:], 2):
+        thread_tweet = f"({i}/{len(chunks)+1})\n{chunk}"
+        payload = {
+            "value1": datetime.now().strftime('%Y-%m-%d'),
+            "value2": thread_tweet,
+            "value3": ""  # No image needed for thread
+        }
+        response = requests.post(WEBHOOK_URL, json=payload)
+    
     return response.status_code == 200
 
 def save_to_csv(recipe, posted=False):
