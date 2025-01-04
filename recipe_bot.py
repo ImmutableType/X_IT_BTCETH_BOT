@@ -13,8 +13,7 @@ def get_recipes(number=1):
     return recipes
 
 def post_to_ifttt(recipe):
-    # Shortened version for tweet
-tweet_text = (f"🍳 Today's Recipe: {recipe['strMeal']}\n\n"
+    tweet_text = (f"🍳 Today's Recipe: {recipe['strMeal']}\n\n"
                  f"Instructions: {recipe['strInstructions'][:200]}...")
     
     payload = {
