@@ -35,33 +35,38 @@ def get_recipes(number=1):
         recipes.append(response.json()['meals'][0])
     return recipes
 
-def format_instructions(instructions):
-    # Pre-process instructions to add double newlines
-    formatted = instructions.replace('. ', '.\n\n')
-    return formatted
+def format_ingredients_and_instructions(recipe):
+    # Gather all ingredients and their measurements
+    ingredients_list = []
+    for i in range(1, 21):  # MealDB provides up to 20 ingredients
+        ingredient = recipe.get(f'strIngredient{i}')
+        measure = recipe.get(f'strMeasure{i}')
+        if ingredient and ingredient.strip() and measure and measure.strip():
+            ingredients_list.append(f"• {measure} {ingredient}")
+    
+    # Join ingredients with newlines
+    ingredients_section = "\n".join(ingredients_list)
+    
+    # Format instructions
+    instructions = recipe['strInstructions'].replace('. ', '.\n\n')
+    
+    # Combine both sections
+    return f"🧂 Ingredients:\n\n{ingredients_section}\n\n📝 Method:\n\n{instructions}"
 
 def post_to_x(recipe):
     # Define emojis as variables
     cooking = "🍳"
     sparkle = "✨"
-    note = "📝"
-    clock = "⏰"
-    bullet = "🔸"
     plate = "🍽"
 
     # Pre-format instructions
-    formatted_instructions = format_instructions(recipe['strInstructions'])
+    formatted_content = format_ingredients_and_instructions(recipe)
 
     # Build tweet text piece by piece
     tweet_parts = [
         f"{cooking} Today's Recipe: {recipe['strMeal']} {sparkle}",
         "",
-        f"{note} Instructions:",
-        "",
-        f"{clock} Prep: Preheat oven to {recipe.get('strTemp', '180°C/350°F')}/Gas 4",
-        "",
-        f"{bullet} Instructions:",
-        formatted_instructions,
+        formatted_content,
         "",
         f"{sparkle} Enjoy your homemade {recipe['strMeal']}! {plate}"
     ]
