@@ -43,10 +43,10 @@ def post_to_x(recipe):
 
 ⏰ Prep: Preheat oven to {recipe.get('strTemp', '180°C/350°F')}/Gas 4
 
-🧂 Instructions:
+🔸 Instructions:
 {recipe['strInstructions'].replace('. ', '.\n\n')}
 
-👩‍🍳 Enjoy your homemade {recipe['strMeal']}! 🍽️"""
+👨‍🍳 Enjoy your homemade {recipe['strMeal']}! 🍽"""
 
     # Debug print
     print(f"Preparing tweet with {len(tweet_text)} characters")
