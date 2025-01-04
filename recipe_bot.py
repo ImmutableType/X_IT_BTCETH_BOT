@@ -13,15 +13,14 @@ def get_recipes(number=1):
     return recipes
 
 def post_to_ifttt(recipe):
-    max_length = 25000  # X Premium limit
-    tweet_text = (f"🍳 Today's Recipe: {recipe['strMeal']}\n\n"
-                 f"Instructions:\n{recipe['strInstructions']}")
-    
-    if len(tweet_text) > max_length:
-        tweet_text = tweet_text[:max_length-3] + "..."
-    
-    # Print length for debugging
-    print(f"Tweet length: {len(tweet_text)}")
+    # Ensure tweet includes full content
+    tweet_text = f"""🍳 Today's Recipe: {recipe['strMeal']}
+
+Instructions:
+{recipe['strInstructions']}"""
+
+    # Debug print
+    print(f"Sending tweet with {len(tweet_text)} characters")
     
     payload = {
         "value1": datetime.now().strftime('%Y-%m-%d'),
@@ -29,7 +28,11 @@ def post_to_ifttt(recipe):
         "value3": recipe['strMealThumb']
     }
     response = requests.post(WEBHOOK_URL, json=payload)
-    print(f"IFTTT Response: {response.status_code}")
+    
+    # Debug print
+    print(f"Response status: {response.status_code}")
+    print(f"Response content: {response.text}")
+    
     return response.status_code == 200
 
 def save_to_csv(recipe, posted=False):
