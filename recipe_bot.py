@@ -46,7 +46,7 @@ def post_to_x(recipe):
 🔸 Instructions:
 {recipe['strInstructions'].replace('. ', '.\n\n')}
 
-👨‍🍳 Enjoy your homemade {recipe['strMeal']}! 🍽"""
+✨ Enjoy your homemade {recipe['strMeal']}! 🍽"""
 
     # Debug print
     print(f"Preparing tweet with {len(tweet_text)} characters")
