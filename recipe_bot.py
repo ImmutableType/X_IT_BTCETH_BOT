@@ -36,17 +36,21 @@ def get_recipes(number=1):
     return recipes
 
 def post_to_x(recipe):
+    # Define emojis as variables
+    cooking = "🍳"
+    sparkle = "✨"
+    note = "📝"
+    clock = "⏰"
+    bullet = "🔸"
+    plate = "🍽"
+
     # Format tweet text with emojis and better spacing
-    tweet_text = f"""🍳 Today's Recipe: {recipe['strMeal']} ✨
-
-📝 Instructions:
-
-⏰ Prep: Preheat oven to {recipe.get('strTemp', '180°C/350°F')}/Gas 4
-
-🔸 Instructions:
-{recipe['strInstructions'].replace('. ', '.\n\n')}
-
-✨ Enjoy your homemade {recipe['strMeal']}! 🍽"""
+    tweet_text = f"{cooking} Today's Recipe: {recipe['strMeal']} {sparkle}\n\n"
+    tweet_text += f"{note} Instructions:\n\n"
+    tweet_text += f"{clock} Prep: Preheat oven to {recipe.get('strTemp', '180°C/350°F')}/Gas 4\n\n"
+    tweet_text += f"{bullet} Instructions:\n"
+    tweet_text += f"{recipe['strInstructions'].replace('. ', '.\n\n')}\n\n"
+    tweet_text += f"{sparkle} Enjoy your homemade {recipe['strMeal']}! {plate}"
 
     # Debug print
     print(f"Preparing tweet with {len(tweet_text)} characters")
