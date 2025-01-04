@@ -2,18 +2,31 @@ import requests
 import csv
 from datetime import datetime
 import os
-import tweepy
+from requests_oauthlib import OAuth1Session
 
-# Replace IFTTT webhook with X API setup
-def get_x_client():
-    client = tweepy.Client(
-        bearer_token=os.environ['X_BEARER_TOKEN'],
-        consumer_key=os.environ['X_API_KEY'],
-        consumer_secret=os.environ['X_API_SECRET'],
-        access_token=os.environ['X_ACCESS_TOKEN'],
-        access_token_secret=os.environ['X_ACCESS_TOKEN_SECRET']
+def get_x_session():
+    return OAuth1Session(
+        os.environ['X_API_KEY'],
+        client_secret=os.environ['X_API_SECRET'],
+        resource_owner_key=os.environ['X_ACCESS_TOKEN'],
+        resource_owner_secret=os.environ['X_ACCESS_TOKEN_SECRET']
     )
-    return client
+
+def download_image(url):
+    response = requests.get(url)
+    if response.status_code == 200:
+        return response.content
+    return None
+
+def upload_media_to_x(image_data):
+    x_session = get_x_session()
+    response = x_session.post(
+        "https://upload.twitter.com/1.1/media/upload.json",
+        files={"media": image_data}
+    )
+    if response.status_code == 200:
+        return response.json()['media_id_string']
+    return None
 
 def get_recipes(number=1):
     recipes = []
@@ -30,16 +43,34 @@ Instructions:
 {recipe['strInstructions']}"""
 
     # Debug print
-    print(f"Sending tweet with {len(tweet_text)} characters")
+    print(f"Preparing tweet with {len(tweet_text)} characters")
     
     try:
-        client = get_x_client()
-        # Create tweet
-        response = client.create_tweet(text=tweet_text)
+        x_session = get_x_session()
+        
+        # Handle image upload
+        print("Downloading image...")
+        image_data = download_image(recipe['strMealThumb'])
+        
+        payload = {"text": tweet_text}
+        
+        if image_data:
+            print("Uploading image to X...")
+            media_id = upload_media_to_x(image_data)
+            if media_id:
+                payload["media"] = {"media_ids": [media_id]}
+        
+        print("Posting tweet...")
+        response = x_session.post(
+            "https://api.twitter.com/2/tweets",
+            json=payload
+        )
         
         # Debug print
-        print(f"Tweet posted successfully: {response}")
-        return True
+        print(f"Response status: {response.status_code}")
+        print(f"Response content: {response.text}")
+        
+        return response.status_code == 201
         
     except Exception as e:
         print(f"Error posting to X: {e}")
@@ -53,11 +84,10 @@ def save_to_csv(recipe, posted=False):
         if not file_exists:
             writer.writerow(['Date', 'Title', 'Full Instructions', 'Image URL', 'Posted'])
         
-        # Store complete recipe in CSV
         writer.writerow([
             datetime.now().strftime('%Y-%m-%d'),
             recipe['strMeal'],
-            recipe['strInstructions'],  # Full instructions
+            recipe['strInstructions'],
             recipe['strMealThumb'],
             'Yes' if posted else 'No'
         ])
