@@ -2,8 +2,18 @@ import requests
 import csv
 from datetime import datetime
 import os
+import tweepy
 
-WEBHOOK_URL = "https://maker.ifttt.com/trigger/post_recipe/with/key/okFtDJyKz74JWbigcGtoDM0z25ac8EjrplKmuJQ1iep"
+# Replace IFTTT webhook with X API setup
+def get_x_client():
+    client = tweepy.Client(
+        bearer_token=os.environ['X_BEARER_TOKEN'],
+        consumer_key=os.environ['X_API_KEY'],
+        consumer_secret=os.environ['X_API_SECRET'],
+        access_token=os.environ['X_ACCESS_TOKEN'],
+        access_token_secret=os.environ['X_ACCESS_TOKEN_SECRET']
+    )
+    return client
 
 def get_recipes(number=1):
     recipes = []
@@ -12,8 +22,8 @@ def get_recipes(number=1):
         recipes.append(response.json()['meals'][0])
     return recipes
 
-def post_to_ifttt(recipe):
-    # Ensure tweet includes full content
+def post_to_x(recipe):
+    # Format tweet text
     tweet_text = f"""🍳 Today's Recipe: {recipe['strMeal']}
 
 Instructions:
@@ -22,18 +32,18 @@ Instructions:
     # Debug print
     print(f"Sending tweet with {len(tweet_text)} characters")
     
-    payload = {
-        "value1": datetime.now().strftime('%Y-%m-%d'),
-        "value2": tweet_text,
-        "value3": recipe['strMealThumb']
-    }
-    response = requests.post(WEBHOOK_URL, json=payload)
-    
-    # Debug print
-    print(f"Response status: {response.status_code}")
-    print(f"Response content: {response.text}")
-    
-    return response.status_code == 200
+    try:
+        client = get_x_client()
+        # Create tweet
+        response = client.create_tweet(text=tweet_text)
+        
+        # Debug print
+        print(f"Tweet posted successfully: {response}")
+        return True
+        
+    except Exception as e:
+        print(f"Error posting to X: {e}")
+        return False
 
 def save_to_csv(recipe, posted=False):
     file_exists = os.path.exists('recipes.csv')
@@ -55,7 +65,7 @@ def save_to_csv(recipe, posted=False):
 def main():
     recipes = get_recipes()
     for recipe in recipes:
-        posted = post_to_ifttt(recipe)
+        posted = post_to_x(recipe)
         save_to_csv(recipe, posted)
 
 if __name__ == "__main__":
