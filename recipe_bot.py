@@ -35,6 +35,11 @@ def get_recipes(number=1):
         recipes.append(response.json()['meals'][0])
     return recipes
 
+def format_instructions(instructions):
+    # Pre-process instructions to add double newlines
+    formatted = instructions.replace('. ', '.\n\n')
+    return formatted
+
 def post_to_x(recipe):
     # Define emojis as variables
     cooking = "🍳"
@@ -44,13 +49,25 @@ def post_to_x(recipe):
     bullet = "🔸"
     plate = "🍽"
 
-    # Format tweet text with emojis and better spacing
-    tweet_text = f"{cooking} Today's Recipe: {recipe['strMeal']} {sparkle}\n\n"
-    tweet_text += f"{note} Instructions:\n\n"
-    tweet_text += f"{clock} Prep: Preheat oven to {recipe.get('strTemp', '180°C/350°F')}/Gas 4\n\n"
-    tweet_text += f"{bullet} Instructions:\n"
-    tweet_text += f"{recipe['strInstructions'].replace('. ', '.\n\n')}\n\n"
-    tweet_text += f"{sparkle} Enjoy your homemade {recipe['strMeal']}! {plate}"
+    # Pre-format instructions
+    formatted_instructions = format_instructions(recipe['strInstructions'])
+
+    # Build tweet text piece by piece
+    tweet_parts = [
+        f"{cooking} Today's Recipe: {recipe['strMeal']} {sparkle}",
+        "",
+        f"{note} Instructions:",
+        "",
+        f"{clock} Prep: Preheat oven to {recipe.get('strTemp', '180°C/350°F')}/Gas 4",
+        "",
+        f"{bullet} Instructions:",
+        formatted_instructions,
+        "",
+        f"{sparkle} Enjoy your homemade {recipe['strMeal']}! {plate}"
+    ]
+
+    # Join all parts with newlines
+    tweet_text = '\n'.join(tweet_parts)
 
     # Debug print
     print(f"Preparing tweet with {len(tweet_text)} characters")
