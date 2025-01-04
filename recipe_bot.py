@@ -14,7 +14,7 @@ def get_recipes(number=1):
 
 def post_to_ifttt(recipe):
     tweet_text = (f"🍳 Today's Recipe: {recipe['strMeal']}\n\n"
-                 f"Instructions: {recipe['strInstructions'][:200]}...")
+                 f"Instructions:\n{recipe['strInstructions']}")
     
     payload = {
         "value1": datetime.now().strftime('%Y-%m-%d'),
