@@ -1,4 +1,3 @@
 requests
-csv
 requests_oauthlib
 pytz
