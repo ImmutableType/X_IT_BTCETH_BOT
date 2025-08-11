@@ -3,6 +3,7 @@ import csv
 from datetime import datetime
 import os
 from requests_oauthlib import OAuth1Session
+import pytz
 
 def get_x_session():
     return OAuth1Session(
@@ -12,85 +13,46 @@ def get_x_session():
         resource_owner_secret=os.environ['X_ACCESS_TOKEN_SECRET']
     )
 
-def download_image(url):
-    response = requests.get(url)
-    if response.status_code == 200:
-        return response.content
-    return None
+def get_crypto_prices():
+    """Fetch current BTC and ETH prices from CoinGecko"""
+    url = "https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum&vs_currencies=usd"
+    try:
+        response = requests.get(url)
+        if response.status_code == 200:
+            data = response.json()
+            return {
+                'btc': data['bitcoin']['usd'],
+                'eth': data['ethereum']['usd']
+            }
+        print(f"Error fetching prices: {response.status_code}")
+        return None
+    except Exception as e:
+        print(f"Error: {e}")
+        return None
 
-def upload_media_to_x(image_data):
-    x_session = get_x_session()
-    response = x_session.post(
-        "https://upload.twitter.com/1.1/media/upload.json",
-        files={"media": image_data}
-    )
-    if response.status_code == 200:
-        return response.json()['media_id_string']
-    return None
-
-def get_recipes(number=1):
-    recipes = []
-    for _ in range(number):
-        response = requests.get('https://www.themealdb.com/api/json/v1/1/random.php')
-        recipes.append(response.json()['meals'][0])
-    return recipes
-
-def format_ingredients_and_instructions(recipe):
-    # Gather all ingredients and their measurements
-    ingredients_list = []
-    for i in range(1, 21):  # MealDB provides up to 20 ingredients
-        ingredient = recipe.get(f'strIngredient{i}')
-        measure = recipe.get(f'strMeasure{i}')
-        if ingredient and ingredient.strip() and measure and measure.strip():
-            ingredients_list.append(f"• {measure} {ingredient}")
+def format_crypto_tweet(prices):
+    """Format the crypto prices into a tweet"""
+    # Get current time in ET
+    et_tz = pytz.timezone('US/Eastern')
+    current_time = datetime.now(et_tz)
+    time_str = current_time.strftime("%I:%M %p ET")
     
-    # Join ingredients with newlines
-    ingredients_section = "\n".join(ingredients_list)
+    # Format with emojis and proper formatting
+    tweet_text = f"""Crypto Price Update 🚨
+
+BTC: ${prices['btc']:,.0f} USD
+ETH: ${prices['eth']:,.0f} USD
+
+{time_str} • {current_time.strftime('%b %d, %Y')}"""
     
-    # Format instructions
-    instructions = recipe['strInstructions'].replace('. ', '.\n\n')
-    
-    # Combine both sections
-    return f"🧂 Ingredients:\n\n{ingredients_section}\n\n📝 Method:\n\n{instructions}"
+    return tweet_text
 
-def post_to_x(recipe):
-    # Define emojis as variables
-    cooking = "🍳"
-    sparkle = "✨"
-    plate = "🍽"
-
-    # Pre-format instructions
-    formatted_content = format_ingredients_and_instructions(recipe)
-
-    # Build tweet text piece by piece
-    tweet_parts = [
-        f"{cooking} Today's Recipe: {recipe['strMeal']} {sparkle}",
-        "",
-        formatted_content,
-        "",
-        f"{sparkle} Enjoy your homemade {recipe['strMeal']}! {plate}"
-    ]
-
-    # Join all parts with newlines
-    tweet_text = '\n'.join(tweet_parts)
-
-    # Debug print
-    print(f"Preparing tweet with {len(tweet_text)} characters")
-    
+def post_to_x(tweet_text):
+    """Post tweet to X/Twitter"""
     try:
         x_session = get_x_session()
         
-        # Handle image upload
-        print("Downloading image...")
-        image_data = download_image(recipe['strMealThumb'])
-        
         payload = {"text": tweet_text}
-        
-        if image_data:
-            print("Uploading image to X...")
-            media_id = upload_media_to_x(image_data)
-            if media_id:
-                payload["media"] = {"media_ids": [media_id]}
         
         print("Posting tweet...")
         response = x_session.post(
@@ -98,9 +60,8 @@ def post_to_x(recipe):
             json=payload
         )
         
-        # Debug print
         print(f"Response status: {response.status_code}")
-        print(f"Response content: {response.text}")
+        print(f"Response: {response.text}")
         
         return response.status_code == 201
         
@@ -108,27 +69,47 @@ def post_to_x(recipe):
         print(f"Error posting to X: {e}")
         return False
 
-def save_to_csv(recipe, posted=False):
-    file_exists = os.path.exists('recipes.csv')
+def save_to_csv(prices, posted=False):
+    """Save record of the post"""
+    file_exists = os.path.exists('crypto_posts.csv')
     
-    with open('recipes.csv', 'a', newline='', encoding='utf-8') as file:
+    with open('crypto_posts.csv', 'a', newline='', encoding='utf-8') as file:
         writer = csv.writer(file)
         if not file_exists:
-            writer.writerow(['Date', 'Title', 'Full Instructions', 'Image URL', 'Posted'])
+            writer.writerow(['Date', 'Time', 'BTC_Price', 'ETH_Price', 'Posted'])
         
+        now = datetime.now()
         writer.writerow([
-            datetime.now().strftime('%Y-%m-%d'),
-            recipe['strMeal'],
-            recipe['strInstructions'],
-            recipe['strMealThumb'],
+            now.strftime('%Y-%m-%d'),
+            now.strftime('%H:%M:%S'),
+            prices['btc'],
+            prices['eth'],
             'Yes' if posted else 'No'
         ])
 
 def main():
-    recipes = get_recipes()
-    for recipe in recipes:
-        posted = post_to_x(recipe)
-        save_to_csv(recipe, posted)
+    print(f"Starting crypto price bot at {datetime.now()}")
+    
+    # Get crypto prices
+    prices = get_crypto_prices()
+    if not prices:
+        print("Failed to get crypto prices")
+        return
+    
+    # Format tweet
+    tweet_text = format_crypto_tweet(prices)
+    print(f"\nTweet to post:\n{tweet_text}\n")
+    
+    # Post to X
+    posted = post_to_x(tweet_text)
+    
+    # Save record
+    save_to_csv(prices, posted)
+    
+    if posted:
+        print("Successfully posted crypto prices!")
+    else:
+        print("Failed to post")
 
 if __name__ == "__main__":
     main()
