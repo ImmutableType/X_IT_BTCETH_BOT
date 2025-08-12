@@ -41,11 +41,13 @@ def format_crypto_tweet(prices):
     # Format with emojis and proper formatting
     tweet_text = f"""Crypto Price Update 🚨
 
-BTC: ${prices['btc']:,.0f} USD
-ETH: ${prices['eth']:,.0f} USD
-FLOW: ${prices['flow']:.2f} USD
+$BTC: ${prices['btc']:,.0f} USD
+$ETH: ${prices['eth']:,.0f} USD
+$FLOW: ${prices['flow']:.2f} USD
 
-{time_str} • {current_time.strftime('%b %d, %Y')}"""
+{time_str} • {current_time.strftime('%b %d, %Y')}
+
+@flow_blockchain is the way"""
     
     return tweet_text
 
