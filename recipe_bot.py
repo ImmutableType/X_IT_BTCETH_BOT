@@ -14,8 +14,8 @@ def get_x_session():
     )
 
 def get_crypto_prices():
-    """Fetch current BTC, ETH, and FLOW prices from CoinGecko"""
-    url = "https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum,flow&vs_currencies=usd"
+    """Fetch current BTC, ETH, FLOW, and FROTH prices from CoinGecko"""
+    url = "https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum,flow,froth&vs_currencies=usd"
     try:
         response = requests.get(url)
         if response.status_code == 200:
@@ -23,7 +23,8 @@ def get_crypto_prices():
             return {
                 'btc': data['bitcoin']['usd'],
                 'eth': data['ethereum']['usd'],
-                'flow': data['flow']['usd']
+                'flow': data['flow']['usd'],
+                'froth': data.get('froth', {}).get('usd', 0)  # Default to 0 if not found
             }
         print(f"Error fetching prices: {response.status_code}")
         return None
@@ -44,6 +45,7 @@ def format_crypto_tweet(prices):
 $BTC: ${prices['btc']:,.0f} USD
 $ETH: ${prices['eth']:,.0f} USD
 $FLOW: ${prices['flow']:.2f} USD
+$FROTH: ${prices['froth']:.4f} USD 🤮
 
 {time_str} • {current_time.strftime('%b %d, %Y')}
 
@@ -80,7 +82,7 @@ def save_to_csv(prices, posted=False):
     with open('crypto_posts.csv', 'a', newline='', encoding='utf-8') as file:
         writer = csv.writer(file)
         if not file_exists:
-            writer.writerow(['Date', 'Time', 'BTC_Price', 'ETH_Price', 'FLOW_Price', 'Posted'])
+            writer.writerow(['Date', 'Time', 'BTC_Price', 'ETH_Price', 'FLOW_Price', 'FROTH_Price', 'Posted'])
         
         now = datetime.now()
         writer.writerow([
@@ -89,6 +91,7 @@ def save_to_csv(prices, posted=False):
             prices['btc'],
             prices['eth'],
             prices['flow'],
+            prices.get('froth', 0),
             'Yes' if posted else 'No'
         ])
 
